@@ -1,0 +1,14 @@
+{
+  "name": "@autoflow/core",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Pure domain model for the flow: types, events, reducer, status derivation, replay. No dependencies.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}
