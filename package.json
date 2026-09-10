@@ -1,0 +1,28 @@
+{
+  "name": "autoflow",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "description": "Turns a live investment discussion into a debate-style flow.",
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "memo": "node apps/cli/src/main.ts memo",
+    "eval": "node packages/classifier/eval/run.ts",
+    "eval:report": "node packages/classifier/eval/report.ts",
+    "eval:check-judge": "node packages/classifier/eval/check-judge.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "pnpm -r --parallel lint"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "@vitest/coverage-v8": "^5.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}

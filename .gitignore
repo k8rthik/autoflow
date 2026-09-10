@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.sqlite
+*.sqlite-journal
+.env
+.env.*
+!.env.example
+.DS_Store
+out/
+packages/classifier/eval/results/
