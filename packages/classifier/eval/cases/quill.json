@@ -1,0 +1,22 @@
+{
+  "id": "quill",
+  "memo": "examples/quill-memo.md",
+  "gold": [
+    "Rent reporting lets renters build a credit score without taking on debt.",
+    "There are 22 million Gen Z renters in the US and about 70% have no credit history that qualifies them for a prime card.",
+    "All three bureaus began accepting rent tradelines from third-party reporters in 2024, enabling a consumer product now.",
+    "Reporting rent raises a thin-file user's score by an average of 40 points within six months, per Quill's cohort data.",
+    "The $4 a month premium tier is bought by 30% of active users.",
+    "Quill has 18,000 monthly active users growing 25% month over month with zero paid acquisition.",
+    "60% of users who connect a bank account are still active after 90 days.",
+    "The founders built the rent-payment product at a property-management software company processing $2B a year in rent.",
+    "The product requires minimal user effort: connect a bank account and Quill identifies and reports the rent payment monthly."
+  ],
+  "forbidden": [
+    "The bureaus could change their reporting rules (risk).",
+    "Large banks could bundle rent reporting for free (risk).",
+    "Premium attach rate may fall as the base broadens (risk).",
+    "The ask: $2.5M seed at $15M post, taking $1M.",
+    "The recommendation to invest."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "larkspur",
+  "memo": "examples/larkspur-memo.md",
+  "gold": [
+    "Cold storage is a $150B global logistics segment growing about 13% a year.",
+    "Inventory counting in cold storage is manual, done in sub-zero conditions, with error rates of 4 to 8 percent.",
+    "Mid-sized operators are about 60% of the cold-storage footprint and are almost entirely unserved by automation vendors.",
+    "The serviceable market for counting and audit automation is about $2.1B.",
+    "The Larkspur robot operates reliably at -25°C, which no competing robot does.",
+    "Deployment takes under two days per facility with no changes to racking.",
+    "The software layer is where durable margin will come from.",
+    "Traction: nine paying customers across 31 facilities, up from three customers a year ago.",
+    "ARR is $1.4M with 140% net revenue retention as customers expand to more sites.",
+    "The two largest customers expanded from pilot to more than six facilities within four months.",
+    "Sales cycle averages 11 weeks.",
+    "Gross margin is 38% today and projected to reach 55% at scale.",
+    "The founders have relevant experience: the CEO ran hardware operations through an acquisition and the CTO led perception at an autonomous forklift startup.",
+    "The 22-person team includes six engineers who have shipped industrial robots, unusual for a Series A.",
+    "Incumbents have not entered cold storage because their platforms fail below freezing and the operators are too small for their sales motion.",
+    "The two seed-stage competitors lack sub -10°C units, giving Larkspur a 12 to 18 month head start."
+  ],
+  "forbidden": [
+    "Hardware margins may not reach projections if component costs stay elevated (risk).",
+    "Customer concentration: top two customers are 45% of ARR (risk).",
+    "A large incumbent could build a cold-rated variant (risk).",
+    "The ask: $4M of a $12M round at $60M post.",
+    "The recommendation to invest."
+  ]
+}

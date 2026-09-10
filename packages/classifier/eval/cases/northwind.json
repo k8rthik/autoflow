@@ -1,0 +1,23 @@
+{
+  "id": "northwind",
+  "memo": "examples/northwind-memo.md",
+  "gold": [
+    "Community hospitals run about 4,000 US pathology labs and a pathologist shortage has stretched biopsy turnaround to nine days versus two at academic centers.",
+    "Slow results cost hospitals patients to referral centers.",
+    "Digital pathology adoption at community hospitals is below 5% because existing systems were built and priced for large academic labs.",
+    "The community segment is a $1.8B annual opportunity for digitization and remote reads.",
+    "Northwind's remote-read model has cut turnaround from nine days to under 48 hours at live sites.",
+    "Northwind's value is the software workflow and pathologist network, earning 55% gross margin on the read fee.",
+    "Live in 14 hospitals across four states, up from four a year ago, with $2.2M annualized revenue.",
+    "Hospitals sign three-year contracts and none has churned.",
+    "Pipeline includes two health systems that would each add more than ten sites.",
+    "The team combines a former hospital COO as CEO, a pathologist CMO who built a remote-read program, and a head of engineering from a radiology AI imaging platform."
+  ],
+  "forbidden": [
+    "The market estimate depends on remote-read reimbursement holding (caveat/risk).",
+    "The pathologist network is supply-constrained and may be hard to scale (risk).",
+    "Health-system sales cycles are long and pipeline deals have slipped (risk).",
+    "The proposed $5M investment in an $18M round.",
+    "The recommendation to invest."
+  ]
+}

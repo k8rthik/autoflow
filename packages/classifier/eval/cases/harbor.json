@@ -1,0 +1,14 @@
+{
+  "id": "harbor",
+  "memo": "examples/harbor-memo.md",
+  "gold": [
+    "Research institutions spend $600M a year on vessel time and wait an average of five months for a research-ship berth, while licensed fishing boats sit idle off-season.",
+    "Harbor completed 40 charters for six universities in four months at a 20% take rate on an $8,000 average charter.",
+    "Every institution that chartered once has chartered again.",
+    "The founder spent eight years coordinating vessel logistics for two oceanographic institutes."
+  ],
+  "forbidden": [
+    "Regulatory permitting varies by state and could slow expansion (risk).",
+    "The suggested $300K check into a $1.5M pre-seed."
+  ]
+}
