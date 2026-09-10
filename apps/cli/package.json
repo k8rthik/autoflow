@@ -1,0 +1,20 @@
+{
+  "name": "@autoflow/cli",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Command line entry points: turn a memo into a flow.",
+  "type": "module",
+  "bin": {
+    "autoflow": "./src/main.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "memo": "node src/main.ts memo"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "@autoflow/classifier": "workspace:*",
+    "@autoflow/core": "workspace:*"
+  }
+}
