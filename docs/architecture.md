@@ -99,19 +99,20 @@ autoflow/
   docs/                 requirements, this document, later ADRs
   packages/
     core/               domain: types, events, reducer, status, replay   (done)
-    classifier/         ClaimExtractor port + Claude adapter              (done: memo → claims)
+    classifier/         ClaimExtractor port + Claude adapter              (done: memo → claims, text + figures)
+    ingest/             .docx / .md → MemoDocument (markdown + figures)   (done)
     transcription/      Transcriber port + Deepgram adapter               (next)
   apps/
     cli/                `autoflow memo`: memo file in, seeded flow out    (done)
-    server/             Hono + ws hub, SQLite event log                   (next)
-    web/                React room/row/transcript views                   (next)
+    server/             Hono API for extraction and samples               (done; websocket hub + SQLite log next)
+    web/                room view as a sheet, inline corrections           (done; log lives in the browser)
 ```
 
 ## 7. Build order for the MVP
 
 1. **Core** with full tests. Done in this scaffold. Everything else is replaceable; this is not.
 2. **Memo and prelims import** through the classifier port, producing `ClaimAdded` and `ArgumentAdded` events. Lets us test claim granularity against real memos (open question 1) before touching audio. *Memo half done via `apps/cli`; prelims next.*
-3. **Web room view** reading a static event log. Validates the projection visually and the animation model.
+3. **Web room view** reading a static event log. Validates the projection visually and the animation model. *Done: the log lives in the browser for now; the server is stateless.*
 4. **Server** with websocket fan-out and SQLite log.
 5. **Live transcription** feeding the transcript view only.
 6. **Live classification** producing proposals, then commits.
