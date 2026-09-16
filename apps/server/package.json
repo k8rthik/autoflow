@@ -1,0 +1,21 @@
+{
+  "name": "@autoflow/server",
+  "version": "0.0.1",
+  "private": true,
+  "description": "HTTP API for the web app: runs claim extraction server-side so credentials never reach the browser.",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.ts",
+    "start": "node src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@autoflow/classifier": "workspace:*",
+    "@autoflow/core": "workspace:*",
+    "@autoflow/ingest": "workspace:*",
+    "@hono/node-server": "^2.1.1",
+    "hono": "^4.13.7",
+    "zod": "^4.6.1"
+  }
+}
