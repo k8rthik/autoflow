@@ -1,9 +1,9 @@
-import { memoToEvents, type ClaimExtractor, type ExtractionError, type IdFactory } from "@autoflow/classifier";
+import { memoToEvents, type ClaimExtractor, type ExtractionError, type IdFactory, type MemoInput } from "@autoflow/classifier";
 import { replay, type FlowEvent, type FlowState } from "@autoflow/core";
 import { renderFlowMarkdown, renderFlowText } from "./render.ts";
 
 export interface MemoCommandInput {
-  readonly memoText: string;
+  readonly memo: string | MemoInput;
   readonly extractor: ClaimExtractor;
   readonly makeId: IdFactory;
 }
@@ -20,8 +20,8 @@ export type MemoCommandResult =
   | { readonly ok: false; readonly error: ExtractionError };
 
 /** Memo text in, seeded flow out. All I/O stays in main.ts so this is testable with a fake extractor. */
-export const runMemoCommand = async ({ memoText, extractor, makeId }: MemoCommandInput): Promise<MemoCommandResult> => {
-  const extraction = await extractor.extractClaims(memoText);
+export const runMemoCommand = async ({ memo, extractor, makeId }: MemoCommandInput): Promise<MemoCommandResult> => {
+  const extraction = await extractor.extractClaims(memo);
   if (!extraction.ok) return extraction;
 
   const events = memoToEvents(extraction.claims, makeId);

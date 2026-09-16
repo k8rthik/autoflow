@@ -2,22 +2,32 @@ import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
 import { CLAIM_EXTRACTION_SYSTEM_PROMPT, createClaudeClaimExtractor } from "../src/index.ts";
 
+/** What the fake stream's finalMessage() resolves to. `parsed_output` is serialised into a text block, or omitted when null. */
 type ParseResponse = {
   parsed_output: unknown;
   stop_reason: string;
   stop_details?: unknown;
   model?: string;
   usage?: { input_tokens: number; output_tokens: number };
+  rawText?: string;
 };
 
+const toMessage = (r: ParseResponse) => ({
+  model: r.model ?? "fake",
+  stop_reason: r.stop_reason,
+  stop_details: r.stop_details ?? null,
+  usage: r.usage ?? { input_tokens: 0, output_tokens: 0 },
+  content: r.rawText !== undefined ? [{ type: "text", text: r.rawText }] : r.parsed_output === null ? [] : [{ type: "text", text: JSON.stringify(r.parsed_output) }],
+});
+
 const fakeClient = (impl: () => Promise<ParseResponse>) => {
-  const parse = vi.fn((_request: unknown) => impl());
-  const client = { messages: { parse } } as unknown as Anthropic;
+  const parse = vi.fn((_request: unknown) => ({ finalMessage: async () => toMessage(await impl()) }));
+  const client = { messages: { stream: parse } } as unknown as Anthropic;
   return { client, parse };
 };
 
 const good: ParseResponse = {
-  parsed_output: { claims: [{ text: "Market is large", excerpt: "TAM of $40B" }] },
+  parsed_output: { claims: [{ topic: "Market", text: "Market is large", excerpt: "TAM of $40B", evidence: [] }] },
   stop_reason: "end_turn",
   model: "claude-opus-5",
   usage: { input_tokens: 120, output_tokens: 30 },
@@ -29,7 +39,7 @@ describe("createClaudeClaimExtractor", () => {
     const result = await createClaudeClaimExtractor({ client }).extractClaims("memo text");
     expect(result).toMatchObject({
       ok: true,
-      claims: [{ text: "Market is large", excerpt: "TAM of $40B" }],
+      claims: [{ topic: "Market", text: "Market is large", excerpt: "TAM of $40B", evidence: [] }],
       meta: { model: "claude-opus-5", inputTokens: 120, outputTokens: 30, stopReason: "end_turn" },
     });
     if (result.ok) expect(result.meta.latencyMs).toBeGreaterThanOrEqual(0);
@@ -40,9 +50,9 @@ describe("createClaudeClaimExtractor", () => {
     await createClaudeClaimExtractor({ client }).extractClaims("memo text");
     expect(parse).toHaveBeenCalledOnce();
     const request = parse.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(request["model"]).toBe("claude-haiku-4-5");
+    expect(request["model"]).toBe("claude-sonnet-5");
     expect(request["system"]).toBe(CLAIM_EXTRACTION_SYSTEM_PROMPT);
-    expect(request["messages"]).toEqual([{ role: "user", content: "memo text" }]);
+    expect(request["messages"]).toEqual([{ role: "user", content: [{ type: "text", text: "memo text" }] }]);
   });
 
   it("honours a model override", async () => {
@@ -68,10 +78,17 @@ describe("createClaudeClaimExtractor", () => {
     expect(result).toMatchObject({ ok: false, error: { code: "REFUSED" } });
   });
 
-  it("reports output that did not parse", async () => {
-    const { client } = fakeClient(async () => ({ parsed_output: null, stop_reason: "end_turn" }));
+  it("reports truncation separately from schema failures", async () => {
+    const { client } = fakeClient(async () => ({ parsed_output: null, stop_reason: "max_tokens", model: "m", usage: { input_tokens: 1, output_tokens: 32000 } }));
     const result = await createClaudeClaimExtractor({ client }).extractClaims("memo");
-    expect(result).toMatchObject({ ok: false, error: { code: "UNPARSEABLE" } });
+    expect(result).toMatchObject({ ok: false, error: { code: "TRUNCATED" } });
+  });
+
+  it("reports output that did not parse, whether not JSON or off-schema", async () => {
+    const notJson = fakeClient(async () => ({ parsed_output: null, stop_reason: "end_turn", rawText: "Sure! Here are" }));
+    expect(await createClaudeClaimExtractor({ client: notJson.client }).extractClaims("memo")).toMatchObject({ ok: false, error: { code: "UNPARSEABLE" } });
+    const offSchema = fakeClient(async () => ({ parsed_output: { claims: [{ text: "no topic" }] }, stop_reason: "end_turn" }));
+    expect(await createClaudeClaimExtractor({ client: offSchema.client }).extractClaims("memo")).toMatchObject({ ok: false, error: { code: "UNPARSEABLE" } });
   });
 
   it("reports when the model found no claims", async () => {

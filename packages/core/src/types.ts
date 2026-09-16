@@ -23,6 +23,8 @@ export interface Claim {
   readonly text: string;
   /** Position in the memo's structure. Rows are displayed in this order. */
   readonly order: number;
+  /** The memo section the claim comes from (Market, Team, ...). Rows are grouped under it. */
+  readonly topic?: string;
 }
 
 export interface Argument {

@@ -43,3 +43,9 @@ node eval/report.ts --variant v2                  # markdown table across all mo
 
 Results land in `eval/results/<variant>/<model>/results.jsonl` (resumable) and `traces/` (raw claims plus
 judge verdicts, for reading when a number looks odd). Results are gitignored.
+
+## Not covered
+
+The cases are markdown only. Real memos arrive as `.docx` with tables and figures; the ingest path is
+unit-tested, but extraction quality from charts and screenshots has no gold yet. Adding a `.docx` case
+means storing the file outside the repo (memos are confidential) and writing gold for its figures.

@@ -40,3 +40,23 @@ Mistral Medium 3.1 topped F1 at a lower price and similar latency. Its extra cla
 ## Not measured
 
 Real memos. All five are fictional and written by the same author, so they share a style. The next real Atland memo should be added as a case with gold written by the memo author.
+
+## Update, later on September 10: claims with evidence (schema v3)
+
+The extractor now returns each claim with its memo evidence nested beneath it, and a topic. The eval
+grades claims and evidence together against the same flat gold, so precision and recall are comparable
+to the table above, but the shape of the output is now what matters most.
+
+| Model | Precision | Recall | F1 | Items/memo | Latency p50 | Cost/memo | Builds claim → evidence structure? |
+|---|---:|---:|---:|---:|---:|---:|---|
+| anthropic/claude-sonnet-5 | 96% | 94% | 95% | 23.5 | 21.1s | $0.028 | Yes: on a real 40k-character memo, 22 claims all with evidence, 61 items |
+| anthropic/claude-haiku-4.5 | 95% | 92% | 94% | 13.8 | 5.4s | $0.006 | **No**: 37 flat claims, 5 evidence items on the same memo, despite explicit prompting |
+| openai/gpt-5.4-mini | 89% | 95% | 92% | 37.0 | 8.5s | $0.008 | Yes: 27 claims all with evidence, 59 items |
+| anthropic/claude-opus-5 | 89% | 99% | 93% | 23.8 | 18.2s | $0.061 | Yes: 28 claims, 63 items (2 of 10 eval runs failed on a provider billing error) |
+
+Haiku's numbers stay good because the judge accepts a fact as covering a gold claim whether it appears
+as a row or as evidence. What it cannot do is decide which facts hang off which conclusion, so a Haiku
+flow is a long flat list of rows. That was the complaint that motivated this change.
+
+Open: Sonnet took nearly four minutes on the Northwind memo through OpenRouter, far slower than its eval
+latency on one-page memos. Whether lowering `effort` or disabling thinking closes that gap is untested.

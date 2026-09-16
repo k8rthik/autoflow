@@ -5,7 +5,7 @@ import { runMemoCommand } from "../src/memo-command.ts";
 const meta = { model: "fake", inputTokens: 0, outputTokens: 0, latencyMs: 0, stopReason: "end_turn" };
 
 const extractorReturning = (claims: { text: string; excerpt: string }[]): ClaimExtractor => ({
-  extractClaims: async () => ({ ok: true, claims, meta }),
+  extractClaims: async () => ({ ok: true, claims: claims.map((c) => ({ ...c, topic: "Market", evidence: [] })), meta }),
 });
 
 describe("runMemoCommand", () => {
@@ -14,7 +14,7 @@ describe("runMemoCommand", () => {
       { text: "Market is large", excerpt: "x" },
       { text: "Team is strong", excerpt: "y" },
     ]);
-    const result = await runMemoCommand({ memoText: "memo", extractor, makeId: sequentialIds("c") });
+    const result = await runMemoCommand({ memo: "memo", extractor, makeId: sequentialIds("c") });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.events).toHaveLength(2);
@@ -27,7 +27,7 @@ describe("runMemoCommand", () => {
     const extractor: ClaimExtractor = {
       extractClaims: async () => ({ ok: false, error: { code: "REFUSED", message: "no" } }),
     };
-    const result = await runMemoCommand({ memoText: "memo", extractor, makeId: sequentialIds("c") });
+    const result = await runMemoCommand({ memo: "memo", extractor, makeId: sequentialIds("c") });
     expect(result).toEqual({ ok: false, error: { code: "REFUSED", message: "no" } });
   });
 });

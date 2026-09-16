@@ -13,7 +13,6 @@
     "memo": "node src/main.ts memo"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.124.0",
     "@autoflow/classifier": "workspace:*",
     "@autoflow/core": "workspace:*"
   }

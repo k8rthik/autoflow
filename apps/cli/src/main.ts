@@ -1,12 +1,10 @@
 #!/usr/bin/env node
-import Anthropic from "@anthropic-ai/sdk";
-import { createClaudeClaimExtractor, randomIds } from "@autoflow/classifier";
+import { createConfiguredExtractor, randomIds } from "@autoflow/classifier";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { runMemoCommand } from "./memo-command.ts";
-import { resolveProvider } from "./provider.ts";
 
 const USAGE = `Usage:
   autoflow memo <memo-file> [--out <dir>] [--model <id>]
@@ -47,12 +45,11 @@ const memoCommand = async (args: readonly string[]): Promise<void> => {
     fail(`Could not read memo at ${memoPath}: ${e.message}`),
   );
 
-  const provider = resolveProvider(process.env);
-  if (!provider.ok) return fail(provider.error);
-  const client = new Anthropic(provider.value.clientOptions);
-  const extractor = createClaudeClaimExtractor({ client, model: values.model ?? provider.value.defaultModel });
-  process.stderr.write(`Extracting claims via ${provider.value.name} (${values.model ?? provider.value.defaultModel})...\n`);
-  const result = await runMemoCommand({ memoText, extractor, makeId: randomIds() });
+  const configured = createConfiguredExtractor(process.env, values.model);
+  if (!configured.ok) return fail(configured.error);
+  const { provider, model, extractor } = configured.value;
+  process.stderr.write(`Extracting claims via ${provider.name} (${model})...\n`);
+  const result = await runMemoCommand({ memo: memoText, extractor, makeId: randomIds() });
   if (!result.ok) return fail(`Could not extract claims (${result.error.code}): ${result.error.message}`);
 
   process.stdout.write(`${result.value.text}\n`);

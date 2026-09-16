@@ -1,7 +1,9 @@
-import type { ClientOptions } from "@anthropic-ai/sdk";
+import Anthropic, { type ClientOptions } from "@anthropic-ai/sdk";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { createClaudeClaimExtractor } from "./claude-claim-extractor.ts";
+import type { ClaimExtractor } from "./types.ts";
 
 export type ProviderName = "anthropic" | "openrouter";
 
@@ -14,9 +16,19 @@ export interface Provider {
 
 export type ProviderResult = { readonly ok: true; readonly value: Provider } | { readonly ok: false; readonly error: string };
 
+export interface ConfiguredExtractor {
+  readonly provider: Provider;
+  readonly model: string;
+  readonly extractor: ClaimExtractor;
+}
+
+export type ConfiguredExtractorResult =
+  | { readonly ok: true; readonly value: ConfiguredExtractor }
+  | { readonly ok: false; readonly error: string };
+
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api";
-const OPENROUTER_DEFAULT_MODEL = "anthropic/claude-haiku-4.5";
-const ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5";
+const OPENROUTER_DEFAULT_MODEL = "anthropic/claude-sonnet-5";
+const ANTHROPIC_DEFAULT_MODEL = "claude-sonnet-5";
 
 export const NO_CREDENTIALS_MESSAGE = `No model credentials found. Put one of these in .env (see .env.example) or your shell:
   ANTHROPIC_API_KEY=sk-ant-...     Anthropic directly
@@ -28,7 +40,8 @@ const isSet = (value: string | undefined): value is string => typeof value === "
 const defaultProfileExists = (): boolean => existsSync(join(homedir(), ".config", "anthropic"));
 
 /**
- * Default model is Haiku 4.5 on both routes: see docs/model-eval-2026-09-10.md for the numbers.
+ * Default model is Sonnet 5 on both routes: Haiku scores well on flat extraction but will not build the
+ * claim → evidence structure. See docs/model-eval-2026-09-10.md. Override with AUTOFLOW_MODEL or --model.
  * Picks where requests go. Anthropic wins when configured because it is the first-party
  * path; OpenRouter is the fallback. Both speak the Messages API, so the adapter is shared.
  */
@@ -52,4 +65,16 @@ export const resolveProvider = (
     };
   }
   return { ok: false, error: NO_CREDENTIALS_MESSAGE };
+};
+
+/** Resolves credentials and builds a ready-to-use extractor. Shared by the CLI and the server. */
+export const createConfiguredExtractor = (
+  env: Readonly<Record<string, string | undefined>>,
+  modelOverride?: string,
+): ConfiguredExtractorResult => {
+  const provider = resolveProvider(env);
+  if (!provider.ok) return provider;
+  const model = modelOverride ?? provider.value.defaultModel;
+  const client = new Anthropic(provider.value.clientOptions);
+  return { ok: true, value: { provider: provider.value, model, extractor: createClaudeClaimExtractor({ client, model }) } };
 };

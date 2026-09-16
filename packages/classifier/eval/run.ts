@@ -71,7 +71,9 @@ const runOne = async (opts: RunOptions, evalCase: EvalCase, rep: number): Promis
     return { ...base, model: null, status: "error", stop_reason: null, error: `${extraction.error.code}: ${extraction.error.message}`, grade: null, latency_s: null, usage: null, judge_model: null, judge_usage: null };
   }
 
-  const { claims, meta } = extraction;
+  const { meta } = extraction;
+  // Gold is flat, so grade claims and their evidence together as one candidate list.
+  const claims = extraction.claims.flatMap((c) => [{ text: c.text, excerpt: c.excerpt }, ...c.evidence]);
   const candidates = claims.map((c) => c.text);
   const judged = await judgeAlignments(opts.client, opts.judgeModel, {
     memo: evalCase.memoText,
