@@ -9,3 +9,4 @@ coverage/
 .DS_Store
 out/
 packages/classifier/eval/results/
+sample_memos/
