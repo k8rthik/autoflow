@@ -1,0 +1,260 @@
+/* Paper and ink. Colour appears only where it carries stance: red pen for attacks, pencil for questions. */
+:root {
+  --paper: #f7f6f2;
+  --paper-2: #edebe4;
+  --ink: #1c1b19;
+  --ink-2: #625f59;
+  --pencil: #8c8981;
+  --rule: #dcd8ce;
+  --red: #b42318;
+  --red-soft: rgba(180, 35, 24, 0.08);
+  --shadow: 0 10px 30px rgba(28, 27, 25, 0.1);
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 5px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #161614;
+    --paper-2: #211f1c;
+    --ink: #ecEae4;
+    --ink-2: #a39f97;
+    --pencil: #7e7b73;
+    --rule: #2d2b27;
+    --red: #e25a4c;
+    --red-soft: rgba(226, 90, 76, 0.12);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink); }
+body {
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.45;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+
+.muted { color: var(--ink-2); }
+.error { color: var(--red); }
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* Stance marks are the only colour on the page. */
+.mark { font-weight: 500; }
+.mark.attack, .sheet-summary .attack { color: var(--red); }
+.mark.question, .sheet-summary .question { color: var(--pencil); }
+
+/* Buttons are text. Hierarchy comes from weight and fill, not colour. */
+.btn {
+  background: none;
+  border: 0;
+  padding: 5px 9px;
+  border-radius: var(--radius);
+  color: var(--ink-2);
+  cursor: pointer;
+  line-height: 1.2;
+}
+.btn:hover:not(:disabled) { color: var(--ink); background: var(--paper-2); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn-primary { color: var(--paper); background: var(--ink); font-weight: 500; }
+.btn-primary:hover:not(:disabled) { color: var(--paper); background: var(--ink); opacity: 0.88; }
+.btn-danger:hover:not(:disabled) { color: var(--red); background: var(--red-soft); }
+.btn-quiet { padding: 2px 6px; }
+
+/* ---------- Intake ---------- */
+.intake {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 10vh 24px 60px;
+}
+.intake-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 2.4rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+}
+.intake-lede { margin: 0 0 28px; color: var(--ink-2); max-width: 36rem; }
+.intake-memo {
+  width: 100%;
+  resize: vertical;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+.intake-memo:focus { border-color: var(--ink-2); outline: none; }
+.intake-drop { position: relative; border-radius: var(--radius); }
+.intake-drop.is-dragging .intake-memo { border-style: dashed; border-color: var(--ink); }
+.intake-source { margin: 8px 2px 0; font-size: 13px; }
+.intake-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 14px; }
+.intake-samples { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; }
+.intake-status { min-height: 1.4em; margin: 12px 2px 0; }
+
+/* ---------- Sheet ---------- */
+.sheet { max-width: 1280px; margin: 0 auto; padding: 44px 32px 64px; }
+.sheet-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 28px; }
+.sheet-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.9rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+.sheet-summary { margin: 0; }
+.sheet-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.confirm { display: inline-flex; align-items: center; gap: 4px; padding-left: 8px; }
+
+.topic { margin-top: 26px; }
+.topic:first-of-type { margin-top: 0; }
+.topic-title { margin: 0 0 4px; padding-left: calc(2rem + 28px); }
+.rows { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--rule); }
+.row {
+  display: grid;
+  grid-template-columns: 2rem minmax(16rem, 23rem) 1fr 1.5rem;
+  gap: 8px 28px;
+  align-items: start;
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}
+.row-untested .row-claim { opacity: 0.72; }
+.row-number { padding-top: 5px; font-size: 13px; }
+
+.row-claim { position: relative; }
+.claim-text {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  line-height: 1.35;
+  color: var(--ink);
+  cursor: text;
+  border-radius: 2px;
+}
+.claim-text:hover { background: var(--paper-2); box-shadow: 0 0 0 6px var(--paper-2); }
+.claim-edit {
+  resize: vertical;
+  background: var(--paper-2);
+  box-shadow: 0 0 0 6px var(--paper-2);
+  outline: none;
+}
+.row-menu-toggle { position: absolute; top: -2px; right: -34px; opacity: 0; }
+.row:hover .row-menu-toggle, .row:focus-within .row-menu-toggle { opacity: 1; }
+.row-menu { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; }
+
+/* The sequence reads left to right; the arrow is a pencil stroke. */
+.row-sequence { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 4px; padding-top: 3px; position: relative; }
+.card-slot { display: inline-flex; align-items: baseline; gap: 4px; position: relative; }
+.arrow { color: var(--pencil); padding: 0 4px; }
+.card {
+  background: none;
+  border: 0;
+  padding: 3px 6px;
+  margin: 0 -6px;
+  border-radius: var(--radius);
+  text-align: left;
+  cursor: pointer;
+  max-width: 34rem;
+  line-height: 1.4;
+  animation: card-in 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.card:hover { background: var(--paper-2); }
+.card .mark { margin-right: 5px; }
+/* The memo's own evidence sits quieter than what the room says. */
+.card.from-memo .card-text, .legend .from-memo { color: var(--ink-2); }
+.card-text { text-decoration-color: transparent; }
+.card.is-drop .card-text { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.card.attack.is-drop .card-text { text-decoration-color: var(--red); }
+.card.question.is-drop .card-text { text-decoration-color: var(--pencil); }
+.answers-ref { font-size: 12px; margin-right: 6px; }
+.btn-add { color: var(--pencil); padding: 1px 8px; font-size: 1.05rem; line-height: 1.2; opacity: 0.55; }
+.row:hover .btn-add, .row:focus-within .btn-add, .row-untested .btn-add { opacity: 1; }
+.row-error { flex-basis: 100%; font-size: 13px; }
+
+@keyframes card-in { from { opacity: 0; transform: translateX(-6px); } }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+
+/* Terminal mark: filled red = contested, hollow pencil = open, filled ink = supported, faint dots = untested. */
+.status-mark { display: inline-block; width: 10px; height: 10px; margin-top: 9px; border-radius: 50%; justify-self: end; }
+.status-contested { background: var(--red); }
+.status-open { border: 1.5px solid var(--pencil); }
+.status-supported { background: var(--ink); }
+.status-untested { border: 1px dotted var(--pencil); opacity: 0.7; }
+
+/* ---------- Forms inside rows ---------- */
+.add-argument { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex-basis: 100%; padding: 6px 0 2px; font-size: 13px; }
+.add-text {
+  flex: 1 1 18rem;
+  min-width: 12rem;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 15px;
+}
+.add-text:focus { outline: none; border-bottom-color: var(--ink); }
+.field { display: inline-flex; align-items: center; gap: 6px; }
+select {
+  padding: 4px 6px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  max-width: 18rem;
+  font-size: 13px;
+}
+.segmented { display: inline-flex; border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+.seg { background: none; border: 0; padding: 4px 10px; color: var(--ink-2); cursor: pointer; font-size: 13px; }
+.seg + .seg { border-left: 1px solid var(--rule); }
+.seg[aria-pressed="true"] { background: var(--paper-2); color: var(--ink); }
+
+.popover {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 26rem;
+  padding: 12px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+.popover-actions { display: flex; gap: 4px; margin-left: auto; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 18px; font-size: 13px; }
+.legend-drop { text-decoration-thickness: 1.5px; text-underline-offset: 3px; text-decoration-color: var(--red); }
+
+@media (max-width: 760px) {
+  .sheet { padding: 28px 16px 48px; }
+  .sheet-header { flex-direction: column; align-items: flex-start; }
+  .row { grid-template-columns: 1.5rem 1fr 1rem; }
+  .row-sequence { grid-column: 2 / 3; }
+  .status-mark { grid-column: 3; grid-row: 1; }
+  .row-menu-toggle { position: static; opacity: 1; }
+  .popover { min-width: 0; width: min(90vw, 26rem); }
+}

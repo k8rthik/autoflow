@@ -9,6 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "dev": "pnpm -r --parallel --filter @autoflow/server --filter @autoflow/web dev",
     "memo": "node apps/cli/src/main.ts memo",
     "eval": "node packages/classifier/eval/run.ts",
     "eval:report": "node packages/classifier/eval/report.ts",
