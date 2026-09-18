@@ -10,8 +10,8 @@ export type ArgumentId = string;
 export type Stance = "support" | "attack" | "question";
 
 /**
- * Derived state of a claim. `untested` is not in the requirements: it marks a row
- * nobody has engaged with, which is different from a row that is standing supported.
+ * Derived state of a claim. See docs/requirements.md §4.5: `untested` marks a row nobody
+ * has engaged with, which is deliberately distinct from a row standing supported after debate.
  */
 export type Status = "supported" | "contested" | "open" | "untested";
 

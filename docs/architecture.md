@@ -56,7 +56,7 @@ Read the requirements again with that lens and most of the hard ones fall out fo
 | Server | Node + Hono + `ws` | Small, fast, WebSocket-native. This is a realtime app, not a content site, so Next.js-style server rendering is the wrong shape. |
 | Persistence | SQLite via Drizzle | One file per deployment, trivially backed up alongside the memo. Two tables matter: `events` and `transcript_segments`. |
 | Transcription | Deepgram streaming behind a `Transcriber` port | Best current latency and custom-vocabulary support ("keyterms"). Replaceable. |
-| Classification | Claude behind a `Classifier` port | Structured outputs into a Zod schema. Memo extraction runs on Haiku 4.5, chosen by eval ([model-eval-2026-09-10.md](./model-eval-2026-09-10.md)). Live classification will be evaluated the same way: fast model for the provisional pass, stronger model to confirm if the eval says it is needed. |
+| Classification | Claude behind a `Classifier` port | Structured outputs into a Zod schema. Memo extraction runs on Sonnet 5, chosen by eval ([model-eval-2026-09-10.md](./model-eval-2026-09-10.md)): Haiku scores as well on flat claims but cannot nest evidence under conclusions. Live classification will be evaluated the same way: fast model for the provisional pass, stronger model to confirm if the eval says it is needed. |
 | Web | React + Vite, Zustand, Framer Motion | Framer's layout animations make "card moves rows" a one-prop feature. Zustand holds the projected state and proposal set. |
 | Validation | Zod at every boundary | Websocket messages, LLM output, HTTP bodies. `core` stays schema-free; boundaries validate before calling into it. |
 | Tests | Vitest | Same runner for core, server, and web. Core targets near-100% coverage; it is small and pure. |
@@ -78,7 +78,9 @@ The requirements say status comes from "the end of the row". Rows are sequential
 2. A **drop** is a standing attack or question.
 3. Claim status is `contested` if any standing attack exists, else `open` if any standing question exists, else `supported` if the row has any arguments, else `untested`.
 
-`untested` is a fourth status not in the requirements. An empty row is not "supported"; it is a claim nobody engaged. The room view should show it distinctly. **Flagged for confirmation.**
+`untested` is a claim nobody engaged: an empty row is not "supported". Confirmed by Keerthik on
+September 18 and written into requirements §4.5, on the grounds that showing an untouched memo claim
+as supported overstates where the room stands.
 
 The rule contains no timestamps, matching the "no time-based heuristics" constraint.
 

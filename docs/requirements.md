@@ -19,7 +19,7 @@ This tool turns an investment discussion into a **flow** — the note-taking str
 - **Row.** The flow line for one claim. Contains the claim and every argument made about it, in sequence.
 - **Argument.** A discrete point made about a claim: a support, an attack (concern), or a question. Arguments are appended to a row in the order they are made.
 - **Arrow.** A link from an argument to the argument it responds to. Arrows give the row its sequencing; a row reads left to right as argument → response → response.
-- **Status.** The current state of a claim, determined by what sits at the end of its row. The tool derives status; nobody assigns it.
+- **Status.** The current state of a claim, determined by what sits at the end of its row. The tool derives status; nobody assigns it. A claim nobody has argued about is *untested*, which is not the same as one that has survived debate.
 - **Drop.** An attack or question at the end of a row with nothing responding to it.
 
 ## 3. Inputs
@@ -57,7 +57,8 @@ This tool turns an investment discussion into a **flow** — the note-taking str
 
 ### 4.5 Sequencing and status
 - Every argument on a row has a sequence position and an arrow to what it answers.
-- Status is derived from the end of the row: an unanswered attack means *contested*; an unanswered question means *open*; a standing response or support means *supported*.
+- Status is derived from the end of the row: an unanswered attack means *contested*; an unanswered question means *open*; a standing response or support means *supported*; an empty row means *untested*.
+- *Untested* is distinct from *supported* on purpose. A memo claim the room never engaged with has not been tested, and showing it as supported would overstate where the room stands — the two must be distinguishable at a glance in the room view.
 - Drops — attacks or questions with nothing after them — are flagged visibly without any time-based heuristics.
 - Status must never be overwritten by a restatement of an argument that has already been answered.
 
