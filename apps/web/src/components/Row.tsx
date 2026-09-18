@@ -1,6 +1,6 @@
 import type { Argument, Claim, FlowState, RowStatus } from "@autoflow/core";
 import { useState } from "react";
-import type { FlowActions } from "../lib/useFlowDoc.ts";
+import type { ApplyEvent } from "../lib/apply.ts";
 import { AddArgument } from "./AddArgument.tsx";
 import { ArgumentCard } from "./ArgumentCard.tsx";
 import { ClaimText } from "./ClaimText.tsx";
@@ -13,7 +13,7 @@ interface Props {
   readonly state: FlowState;
   readonly status: RowStatus;
   readonly claims: readonly Claim[];
-  readonly actions: FlowActions;
+  readonly apply: ApplyEvent;
 }
 
 const argumentsOn = (state: FlowState, claimId: string): readonly Argument[] =>
@@ -22,14 +22,14 @@ const argumentsOn = (state: FlowState, claimId: string): readonly Argument[] =>
     return a ? [a] : [];
   });
 
-export const Row = ({ claim, index, state, status, claims, actions }: Props) => {
+export const Row = ({ claim, index, state, status, claims, apply: submit }: Props) => {
   const args = argumentsOn(state, claim.id);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const apply: FlowActions["apply"] = (event) => {
-    const message = actions.apply(event);
+  const apply: ApplyEvent = async (event) => {
+    const message = await submit(event);
     setError(message);
     return message;
   };
@@ -39,7 +39,7 @@ export const Row = ({ claim, index, state, status, claims, actions }: Props) => 
       <span className="row-number muted">{index + 1}</span>
 
       <div className="row-claim">
-        <ClaimText claim={claim} onRename={(text) => apply({ type: "ClaimRenamed", claimId: claim.id, text })} />
+        <ClaimText claim={claim} onRename={(text) => void apply({ type: "ClaimRenamed", claimId: claim.id, text })} />
         <RowMenu claim={claim} claims={claims} apply={apply} />
       </div>
 

@@ -1,18 +1,18 @@
 import type { MemoFigure } from "@autoflow/classifier";
 import { useEffect, useRef, useState } from "react";
-import { buildFlow, fetchSample, listSamples, parseMemoFile, type SampleSummary } from "../lib/api.ts";
-import type { FlowDoc } from "../lib/store.ts";
+import { createSession, fetchSample, listSamples, parseMemoFile, type SampleSummary } from "../lib/api.ts";
+import type { SessionDoc } from "../lib/session-doc.ts";
 
 type Status = { kind: "idle" } | { kind: "loading"; what: string } | { kind: "error"; message: string };
 
 interface Props {
-  readonly onLoaded: (doc: FlowDoc) => void;
+  readonly onCreated: (doc: SessionDoc) => void;
 }
 
 const ACCEPT = ".docx,.md,.markdown,.txt";
 
 /** The blank sheet. One job: get a memo in, by paste, by file, or from a sample. */
-export const Intake = ({ onLoaded }: Props) => {
+export const Intake = ({ onCreated }: Props) => {
   const [memo, setMemo] = useState("");
   const [figures, setFigures] = useState<readonly MemoFigure[]>([]);
   const [source, setSource] = useState<string | null>(null);
@@ -52,9 +52,9 @@ export const Intake = ({ onLoaded }: Props) => {
   const build = async () => {
     if (memo.trim() === "") return setStatus({ kind: "error", message: "Paste a memo or choose a file first." });
     setStatus({ kind: "loading", what: figures.length > 0 ? `Reading the memo and ${figures.length} figures` : "Reading the memo" });
-    const r = await buildFlow(memo, figures);
+    const r = await createSession(memo, figures);
     if (!r.ok) return setStatus({ kind: "error", message: r.error.message });
-    onLoaded({ title: r.value.title, events: r.value.events });
+    onCreated({ session: r.value.session, events: r.value.events });
   };
 
   const busy = status.kind === "loading";

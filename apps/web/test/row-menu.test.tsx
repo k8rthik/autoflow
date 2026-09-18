@@ -8,7 +8,7 @@ const mine = claim("c1", "The market is large", 0);
 const other = claim("c2", "The team is strong", 1);
 
 const setup = async (claims = [mine, other]) => {
-  const apply = vi.fn().mockReturnValue(null);
+  const apply = vi.fn().mockResolvedValue(null);
   const user = userEvent.setup();
   render(<RowMenu claim={mine} claims={claims} apply={apply} />);
   await user.click(screen.getByRole("button", { name: "Row options" }));

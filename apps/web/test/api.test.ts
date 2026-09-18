@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildFlow, fetchSample, listSamples, parseEnvelope, parseMemoFile } from "../src/lib/api.ts";
+import { createSession, fetchSample, fetchSession, listSamples, parseEnvelope, parseMemoFile, submitEvents } from "../src/lib/api.ts";
 
 const isString = (d: unknown): d is string => typeof d === "string";
 
@@ -27,14 +27,14 @@ describe("api requests", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it("posts the memo and its figures as JSON and unwraps the flow", async () => {
-    const data = { title: "Larkspur", events: [], model: "fake", latencyMs: 3 };
+  it("posts the memo and its figures as JSON and unwraps the session", async () => {
+    const data = { session: { id: "s1", title: "Larkspur", createdAt: "now" }, events: [], model: "fake", latencyMs: 3 };
     respondWith({ ok: true, data, error: null });
     const figures = [{ index: 1, mediaType: "image/png" as const, data: "QUJD" }];
 
-    expect(await buildFlow("a memo", figures)).toEqual({ ok: true, value: data });
+    expect(await createSession("a memo", figures)).toEqual({ ok: true, value: data });
     const [path, init] = lastCall();
-    expect(path).toBe("/api/memo");
+    expect(path).toBe("/api/sessions");
     expect(init).toMatchObject({ method: "POST", headers: { "content-type": "application/json" } });
     expect(JSON.parse(String(init?.body))).toEqual({ memo: "a memo", figures });
   });
@@ -63,7 +63,7 @@ describe("api requests", () => {
 
   it("explains an unreachable server rather than throwing at the caller", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
-    expect(await buildFlow("a memo")).toEqual({
+    expect(await createSession("a memo")).toEqual({
       ok: false,
       error: { code: "NETWORK", message: "Could not reach the server. Is it running?" },
     });
@@ -71,16 +71,44 @@ describe("api requests", () => {
 
   it("treats an unparseable body as a malformed response", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ json: async () => { throw new SyntaxError("bad json"); } } as unknown as Response));
-    expect(await buildFlow("a memo")).toMatchObject({ ok: false, error: { code: "NETWORK" } });
+    expect(await createSession("a memo")).toMatchObject({ ok: false, error: { code: "NETWORK" } });
   });
 
   it("passes a server error through to the caller", async () => {
     respondWith({ ok: false, data: null, error: { code: "REFUSED", message: "The model refused" } });
-    expect(await buildFlow("a memo")).toEqual({ ok: false, error: { code: "REFUSED", message: "The model refused" } });
+    expect(await createSession("a memo")).toEqual({ ok: false, error: { code: "REFUSED", message: "The model refused" } });
   });
 
   it("flags a success envelope whose payload is the wrong shape", async () => {
     respondWith({ ok: true, data: { title: "Larkspur" }, error: null });
-    expect(await buildFlow("a memo")).toMatchObject({ ok: false, error: { code: "MALFORMED" } });
+    expect(await createSession("a memo")).toMatchObject({ ok: false, error: { code: "MALFORMED" } });
+  });
+
+  it("reads a session back by id", async () => {
+    const data = { session: { id: "s1", title: "Larkspur", createdAt: "now" }, events: [] };
+    respondWith({ ok: true, data, error: null });
+
+    expect(await fetchSession("s1")).toEqual({ ok: true, value: data });
+    expect(lastCall()[0]).toBe("/api/sessions/s1");
+  });
+
+  it("posts corrections to the session's event route", async () => {
+    const event = { type: "ClaimRemoved" as const, claimId: "c1" };
+    respondWith({ ok: true, data: { events: [{ seq: 2, at: "now", actor: "participant", event }] }, error: null });
+
+    const result = await submitEvents("s1", [event]);
+
+    expect(result).toMatchObject({ ok: true, value: { events: [{ seq: 2 }] } });
+    const [path, init] = lastCall();
+    expect(path).toBe("/api/sessions/s1/events");
+    expect(JSON.parse(String(init?.body))).toEqual({ events: [event] });
+  });
+
+  it("passes a refused correction back with the server's reason", async () => {
+    respondWith({ ok: false, data: null, error: { code: "CLAIM_NOT_FOUND", message: "No claim c1" } });
+    expect(await submitEvents("s1", [{ type: "ClaimRemoved", claimId: "c1" }])).toEqual({
+      ok: false,
+      error: { code: "CLAIM_NOT_FOUND", message: "No claim c1" },
+    });
   });
 });

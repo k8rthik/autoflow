@@ -1,10 +1,11 @@
-import type { Claim, FlowEvent } from "@autoflow/core";
+import type { Claim } from "@autoflow/core";
+import type { ApplyEvent } from "../lib/apply.ts";
 import { useState } from "react";
 
 interface Props {
   readonly claim: Claim;
   readonly claims: readonly Claim[];
-  readonly apply: (event: FlowEvent) => string | null;
+  readonly apply: ApplyEvent;
 }
 
 /** Row-level corrections from requirements 4.1: merge into another row, or delete. */
@@ -28,7 +29,7 @@ export const RowMenu = ({ claim, claims, apply }: Props) => {
           <select
             defaultValue=""
             onChange={(e) => {
-              if (e.target.value) apply({ type: "ClaimsMerged", into: e.target.value, from: claim.id });
+              if (e.target.value) void apply({ type: "ClaimsMerged", into: e.target.value, from: claim.id });
             }}
           >
             <option value="" disabled>choose a claim…</option>
@@ -38,7 +39,7 @@ export const RowMenu = ({ claim, claims, apply }: Props) => {
           </select>
         </label>
       )}
-      <button className="btn btn-danger" onClick={() => apply({ type: "ClaimRemoved", claimId: claim.id })}>Delete row</button>
+      <button className="btn btn-danger" onClick={() => void apply({ type: "ClaimRemoved", claimId: claim.id })}>Delete row</button>
       <button className="btn" onClick={() => setOpen(false)}>Close</button>
     </div>
   );

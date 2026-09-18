@@ -10,7 +10,7 @@ const a3 = argument("a3", "c1", "Ops is not founding", "attack", "a1");
 const row = [a1, a2, a3];
 
 const renderCard = (arg = a2, position = 1, overrides: Partial<Parameters<typeof ArgumentCard>[0]> = {}) => {
-  const apply = vi.fn().mockReturnValue(null);
+  const apply = vi.fn().mockResolvedValue(null);
   const onToggleEdit = vi.fn();
   render(
     <ArgumentCard

@@ -1,4 +1,5 @@
-import type { Argument, FlowEvent } from "@autoflow/core";
+import type { Argument } from "@autoflow/core";
+import type { ApplyEvent } from "../lib/apply.ts";
 import { AnswersSelect } from "./AnswersSelect.tsx";
 import { STANCE_MARK, StanceControl } from "./StanceControl.tsx";
 
@@ -9,7 +10,7 @@ interface Props {
   readonly isDrop: boolean;
   readonly editing: boolean;
   readonly onToggleEdit: () => void;
-  readonly apply: (event: FlowEvent) => string | null;
+  readonly apply: ApplyEvent;
 }
 
 /**
@@ -38,14 +39,14 @@ export const ArgumentCard = ({ argument, position, row, isDrop, editing, onToggl
 
       {editing && (
         <div className="popover" role="dialog" aria-label="Edit argument">
-          <StanceControl value={argument.stance} onChange={(stance) => apply({ type: "ArgumentRestanced", argumentId: argument.id, stance })} />
+          <StanceControl value={argument.stance} onChange={(stance) => void apply({ type: "ArgumentRestanced", argumentId: argument.id, stance })} />
           <AnswersSelect
             candidates={earlier}
             value={argument.respondsTo}
-            onChange={(respondsTo) => apply({ type: "ArrowRepointed", argumentId: argument.id, respondsTo })}
+            onChange={(respondsTo) => void apply({ type: "ArrowRepointed", argumentId: argument.id, respondsTo })}
           />
           <div className="popover-actions">
-            <button className="btn btn-danger" onClick={() => apply({ type: "ArgumentRemoved", argumentId: argument.id })}>
+            <button className="btn btn-danger" onClick={() => void apply({ type: "ArgumentRemoved", argumentId: argument.id })}>
               Not an argument
             </button>
             <button className="btn" onClick={onToggleEdit}>Done</button>

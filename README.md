@@ -13,8 +13,9 @@ on that row with an arrow to what it answers; status is derived from what is lef
 packages/core        pure domain: types, events, reducer, status derivation, replay
 packages/classifier  ClaimExtractor port + Claude adapter; memo → ClaimAdded events
 packages/ingest      .docx / .md → markdown with tables, plus figures sent to the model as images
+packages/storage     EventStore port + SQLite and in-memory adapters for the append-only log
 apps/cli             `autoflow memo <file>`: memo in, seeded flow out
-apps/server          HTTP API: runs extraction server-side, serves sample memos
+apps/server          session hub, HTTP API and websocket fan-out over the event log
 apps/web             room view: the flow as a sheet, with inline corrections
 packages/transcription  Transcriber port + Deepgram adapter               — next
 ```
@@ -30,8 +31,16 @@ Open http://localhost:5173, then paste a memo, drop or choose a `.docx` / `.md` 
 sample, and build the flow. Word documents are converted server-side: tables become markdown tables and
 embedded charts, screenshots and graphics are sent to the model as images alongside the text. On the sheet you can
 click a claim to rename it, use the row menu to merge or delete it, add arguments with a stance and
-an arrow, click an argument to change its stance, re-point its arrow or remove it, and undo or export
-the event log. The flow persists in the browser between reloads.
+an arrow, click an argument to change its stance, re-point its arrow or remove it, and export the
+event log.
+
+Building a flow opens a **room**, and the room is in the URL (`#/s/<id>`). Share that link and
+everyone who opens it joins the same flow: corrections are validated on the server and pushed to
+every other participant over a websocket. The log lives in SQLite at `data/autoflow.db` (override
+with `AUTOFLOW_DB`), so a reload — or a server restart — comes back to the same room.
+
+Corrections are append-only, so there is no undo button: fixing a correction means making another
+one, and every step stays in the log.
 
 ## Try it: memo → flow
 

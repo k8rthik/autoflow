@@ -54,7 +54,7 @@ Read the requirements again with that lens and most of the hard ones fall out fo
 | Monorepo | pnpm workspaces | Boring, fast, no extra build tool to learn. Packages import each other by source during the MVP. |
 | Domain core | Plain TS, no deps | See §2. Immutable data, functions return new state. |
 | Server | Node + Hono + `ws` | Small, fast, WebSocket-native. This is a realtime app, not a content site, so Next.js-style server rendering is the wrong shape. |
-| Persistence | SQLite via Drizzle | One file per deployment, trivially backed up alongside the memo. Two tables matter: `events` and `transcript_segments`. |
+| Persistence | SQLite via `node:sqlite` | One file per deployment, trivially backed up alongside the memo. Two tables matter: `events` and `transcript_segments`. Drizzle was proposed and dropped once built: two append-only tables need no query builder or migration tool, and the built-in driver avoids a native build step. Behind the `EventStore` port either way. Requires Node 24+. |
 | Transcription | Deepgram streaming behind a `Transcriber` port | Best current latency and custom-vocabulary support ("keyterms"). Replaceable. |
 | Classification | Claude behind a `Classifier` port | Structured outputs into a Zod schema. Memo extraction runs on Sonnet 5, chosen by eval ([model-eval-2026-09-10.md](./model-eval-2026-09-10.md)): Haiku scores as well on flat claims but cannot nest evidence under conclusions. Live classification will be evaluated the same way: fast model for the provisional pass, stronger model to confirm if the eval says it is needed. |
 | Web | React + Vite, Zustand, Framer Motion | Framer's layout animations make "card moves rows" a one-prop feature. Zustand holds the projected state and proposal set. |
@@ -103,19 +103,20 @@ autoflow/
     core/               domain: types, events, reducer, status, replay   (done)
     classifier/         ClaimExtractor port + Claude adapter              (done: memo → claims, text + figures)
     ingest/             .docx / .md → MemoDocument (markdown + figures)   (done)
+    storage/            EventStore port + SQLite and in-memory adapters   (done)
     transcription/      Transcriber port + Deepgram adapter               (next)
   apps/
     cli/                `autoflow memo`: memo file in, seeded flow out    (done)
-    server/             Hono API for extraction and samples               (done; websocket hub + SQLite log next)
-    web/                room view as a sheet, inline corrections           (done; log lives in the browser)
+    server/             session hub, HTTP API, websocket fan-out          (done)
+    web/                room view as a sheet, inline corrections           (done; joins a server session)
 ```
 
 ## 7. Build order for the MVP
 
 1. **Core** with full tests. Done in this scaffold. Everything else is replaceable; this is not.
 2. **Memo and prelims import** through the classifier port, producing `ClaimAdded` and `ArgumentAdded` events. Lets us test claim granularity against real memos (open question 1) before touching audio. *Memo half done via `apps/cli`; prelims next.*
-3. **Web room view** reading a static event log. Validates the projection visually and the animation model. *Done: the log lives in the browser for now; the server is stateless.*
-4. **Server** with websocket fan-out and SQLite log.
+3. **Web room view** reading a static event log. Validates the projection visually and the animation model. *Done.*
+4. **Server** with websocket fan-out and SQLite log. *Done: sessions are persisted through the `EventStore` port, corrections are validated server-side before they enter the log, and committed events are pushed to every client in the room.*
 5. **Live transcription** feeding the transcript view only.
 6. **Live classification** producing proposals, then commits.
 7. Replay, summary, export.

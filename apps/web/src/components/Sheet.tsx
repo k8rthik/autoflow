@@ -1,13 +1,14 @@
 import { statusOfAll, type Claim, type FlowState } from "@autoflow/core";
-import type { FlowDoc } from "../lib/store.ts";
-import type { FlowActions } from "../lib/useFlowDoc.ts";
+import type { ApplyEvent } from "../lib/apply.ts";
+import type { SessionDoc } from "../lib/session-doc.ts";
 import { Header } from "./Header.tsx";
 import { Row } from "./Row.tsx";
 
 interface Props {
-  readonly doc: FlowDoc;
+  readonly doc: SessionDoc;
   readonly state: FlowState;
-  readonly actions: FlowActions;
+  readonly apply: ApplyEvent;
+  readonly onLeave: () => void;
 }
 
 interface TopicGroup {
@@ -24,14 +25,14 @@ const groupByTopic = (claims: readonly Claim[]): readonly TopicGroup[] =>
     return [...groups, { topic, claims: [claim] }];
   }, []);
 
-export const Sheet = ({ doc, state, actions }: Props) => {
+export const Sheet = ({ doc, state, apply, onLeave }: Props) => {
   const claims = Object.values(state.claims).toSorted((a, b) => a.order - b.order);
   const statuses = statusOfAll(state);
   const indexOf = new Map(claims.map((c, i) => [c.id, i]));
 
   return (
     <main className="sheet">
-      <Header doc={doc} claims={claims} statuses={statuses} actions={actions} />
+      <Header doc={doc} claims={claims} statuses={statuses} onLeave={onLeave} />
       {groupByTopic(claims).map((group, g) => (
         <section key={`${group.topic ?? "untopiced"}-${g}`} className="topic">
           {group.topic && <h2 className="topic-title eyebrow">{group.topic}</h2>}
@@ -39,7 +40,7 @@ export const Sheet = ({ doc, state, actions }: Props) => {
             {group.claims.map((claim) => {
               const status = statuses[claim.id];
               return status ? (
-                <Row key={claim.id} claim={claim} index={indexOf.get(claim.id) ?? 0} state={state} status={status} claims={claims} actions={actions} />
+                <Row key={claim.id} claim={claim} index={indexOf.get(claim.id) ?? 0} state={state} status={status} claims={claims} apply={apply} />
               ) : null;
             })}
           </ol>

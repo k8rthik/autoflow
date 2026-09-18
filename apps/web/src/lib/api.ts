@@ -1,5 +1,5 @@
 import type { MemoFigure } from "@autoflow/classifier";
-import type { FlowEvent } from "@autoflow/core";
+import type { FlowEvent, RecordedEvent } from "@autoflow/core";
 
 export interface ApiError {
   readonly code: string;
@@ -8,11 +8,22 @@ export interface ApiError {
 
 export type ApiResult<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: ApiError };
 
-export interface MemoResponse {
+export interface Session {
+  readonly id: string;
   readonly title: string;
-  readonly events: readonly FlowEvent[];
+  readonly createdAt: string;
+}
+
+export interface SessionResponse {
+  readonly session: Session;
+  readonly events: readonly RecordedEvent[];
   readonly model: string;
   readonly latencyMs: number;
+}
+
+export interface Snapshot {
+  readonly session: Session;
+  readonly events: readonly RecordedEvent[];
 }
 
 export interface MemoDocument {
@@ -54,8 +65,16 @@ const request = async <T>(path: string, init: RequestInit, isData: (d: unknown) 
   }
 };
 
-const isMemoResponse = (d: unknown): d is MemoResponse =>
-  typeof d === "object" && d !== null && typeof (d as MemoResponse).title === "string" && Array.isArray((d as MemoResponse).events);
+const isSnapshot = (d: unknown): d is Snapshot => {
+  if (typeof d !== "object" || d === null) return false;
+  const { session, events } = d as Snapshot;
+  return typeof session === "object" && session !== null && typeof session.id === "string" && Array.isArray(events);
+};
+
+const isSessionResponse = (d: unknown): d is SessionResponse => isSnapshot(d);
+
+const isRecordedEvents = (d: unknown): d is { events: readonly RecordedEvent[] } =>
+  typeof d === "object" && d !== null && Array.isArray((d as { events: unknown }).events);
 
 const isSampleList = (d: unknown): d is { samples: SampleSummary[] } =>
   typeof d === "object" && d !== null && Array.isArray((d as { samples: unknown }).samples);
@@ -70,11 +89,22 @@ const isMemoDocument = (d: unknown): d is MemoDocument =>
   typeof (d as MemoDocument).title === "string" &&
   Array.isArray((d as MemoDocument).figures);
 
-export const buildFlow = (memo: string, figures: readonly MemoFigure[] = []) =>
+/** Builds the flow and opens a session for it. The returned log is the session's first events. */
+export const createSession = (memo: string, figures: readonly MemoFigure[] = []) =>
   request(
-    "/api/memo",
+    "/api/sessions",
     { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ memo, figures }) },
-    isMemoResponse,
+    isSessionResponse,
+  );
+
+export const fetchSession = (id: string) => request(`/api/sessions/${encodeURIComponent(id)}`, {}, isSnapshot);
+
+/** Corrections go to the server, which validates them against the log before anything is committed. */
+export const submitEvents = (id: string, events: readonly FlowEvent[]) =>
+  request(
+    `/api/sessions/${encodeURIComponent(id)}/events`,
+    { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ events }) },
+    isRecordedEvents,
   );
 
 /** Uploads a .docx or text file; the server converts it and returns markdown plus figures for review. */

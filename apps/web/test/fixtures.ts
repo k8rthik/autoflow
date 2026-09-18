@@ -1,4 +1,7 @@
-import { emptyFlow, reduce, type Argument, type Claim, type FlowEvent, type FlowState, type Provenance, type Stance } from "@autoflow/core";
+import { emptyFlow, reduce, type Argument, type Claim, type FlowEvent, type FlowState, type Provenance, type RecordedEvent, type Stance } from "@autoflow/core";
+import { vi } from "vitest";
+import type { ApplyEvent } from "../src/lib/apply.ts";
+import type { SessionDoc } from "../src/lib/session-doc.ts";
 
 export const claim = (id: string, text: string, order: number, topic?: string): Claim => ({
   id,
@@ -26,3 +29,18 @@ export const build = (events: readonly FlowEvent[]): FlowState =>
     if (!next.ok) throw new Error(`Fixture event ${event.type} rejected: ${next.error.message}`);
     return next.value;
   }, emptyFlow());
+
+/** Wraps bare events as the server would record them, so components see what they see in the room. */
+export const recorded = (events: readonly FlowEvent[], actor: RecordedEvent["actor"] = "import"): readonly RecordedEvent[] =>
+  events.map((event, i) => ({ seq: i + 1, at: `2026-09-18T10:0${i}:00.000Z`, actor, event }));
+
+export const sessionDoc = (events: readonly FlowEvent[], title = "Larkspur"): SessionDoc => ({
+  session: { id: "s1", title, createdAt: "2026-09-18T10:00:00.000Z" },
+  events: recorded(events),
+});
+
+/** An apply that the server always accepts. */
+export const acceptingApply = () => vi.fn<ApplyEvent>().mockResolvedValue(null);
+
+/** An apply the server refuses, with the reason it gives. */
+export const refusingApply = (reason: string) => vi.fn<ApplyEvent>().mockResolvedValue(reason);

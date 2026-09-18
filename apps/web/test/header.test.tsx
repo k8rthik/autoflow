@@ -3,9 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Header } from "../src/components/Header.tsx";
-import type { FlowDoc } from "../src/lib/store.ts";
-import type { FlowActions } from "../src/lib/useFlowDoc.ts";
-import { argument, argumentAdded, build, claim, claimAdded } from "./fixtures.ts";
+import type { SessionDoc } from "../src/lib/session-doc.ts";
+import { argument, argumentAdded, build, claim, claimAdded, sessionDoc } from "./fixtures.ts";
 
 const events = [
   claimAdded(claim("c1", "The market is large", 0)),
@@ -15,12 +14,12 @@ const events = [
   argumentAdded(argument("a2", "c3", "What is the entry multiple?", "question")),
 ];
 
-const setup = (doc: FlowDoc = { title: "Larkspur", events }) => {
-  const state = build(doc.events);
+const setup = (doc: SessionDoc = sessionDoc(events)) => {
+  const state = build(doc.events.map((e) => e.event));
   const claims: readonly Claim[] = Object.values(state.claims).toSorted((a, b) => a.order - b.order);
-  const actions: FlowActions = { load: vi.fn(), apply: vi.fn(), undo: vi.fn(), reset: vi.fn() };
-  render(<Header doc={doc} claims={claims} statuses={statusOfAll(state)} actions={actions} />);
-  return { actions, user: userEvent.setup() };
+  const onLeave = vi.fn();
+  render(<Header doc={doc} claims={claims} statuses={statusOfAll(state)} onLeave={onLeave} />);
+  return { onLeave, user: userEvent.setup() };
 };
 
 describe("Header", () => {
@@ -32,39 +31,35 @@ describe("Header", () => {
   });
 
   it("says nothing about contested or open rows when there are none", () => {
-    setup({ title: "Quiet", events: [claimAdded(claim("c1", "Only claim", 0))] });
+    setup(sessionDoc([claimAdded(claim("c1", "Only claim", 0))], "Quiet"));
     expect(screen.getByText(/1 claim$/)).toBeInTheDocument();
     expect(screen.queryByText(/contested/)).not.toBeInTheDocument();
     expect(screen.queryByText(/open/)).not.toBeInTheDocument();
   });
 
   it("falls back to a placeholder when the memo had no title", () => {
-    setup({ title: "", events });
+    setup(sessionDoc(events, ""));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Untitled memo");
   });
 
-  it("undoes the last event, and offers nothing to undo on an empty log", async () => {
-    const { actions, user } = setup();
-    await user.click(screen.getByRole("button", { name: "Undo" }));
-    expect(actions.undo).toHaveBeenCalled();
-
-    setup({ title: "Empty", events: [] });
-    expect(screen.getAllByRole("button", { name: "Undo" }).at(-1)).toBeDisabled();
+  it("offers no undo, because the log is shared and append-only", () => {
+    setup();
+    expect(screen.queryByRole("button", { name: "Undo" })).not.toBeInTheDocument();
   });
 
-  it("asks before discarding the flow, and discards only on confirmation", async () => {
-    const { actions, user } = setup();
+  it("asks before leaving, and says the flow is not being thrown away", async () => {
+    const { onLeave, user } = setup();
     await user.click(screen.getByRole("button", { name: "New memo" }));
-    expect(actions.reset).not.toHaveBeenCalled();
-    expect(screen.getByText("Discard this flow?")).toBeInTheDocument();
+    expect(onLeave).not.toHaveBeenCalled();
+    expect(screen.getByText(/The flow stays on the server/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Keep" }));
-    expect(actions.reset).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Stay" }));
+    expect(onLeave).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "New memo" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "New memo" }));
-    await user.click(screen.getByRole("button", { name: "Discard" }));
-    expect(actions.reset).toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Leave" }));
+    expect(onLeave).toHaveBeenCalled();
   });
 });
 
@@ -87,7 +82,7 @@ describe("Header export", () => {
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:flow");
     const blob = createObjectURL.mock.calls[0]?.[0] as Blob;
     expect(blob.type).toBe("application/json");
-    expect(JSON.parse(await blob.text())).toEqual({ title: "Larkspur", events });
+    expect(JSON.parse(await blob.text())).toEqual(sessionDoc(events));
     click.mockRestore();
   });
 });

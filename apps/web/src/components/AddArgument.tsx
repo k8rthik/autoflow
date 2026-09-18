@@ -1,4 +1,5 @@
-import type { Argument, Claim, FlowEvent, Stance } from "@autoflow/core";
+import type { Argument, Claim, Stance } from "@autoflow/core";
+import type { ApplyEvent } from "../lib/apply.ts";
 import { useState } from "react";
 import { newId } from "../lib/ids.ts";
 import { AnswersSelect } from "./AnswersSelect.tsx";
@@ -7,7 +8,7 @@ import { StanceControl } from "./StanceControl.tsx";
 interface Props {
   readonly claim: Claim;
   readonly row: readonly Argument[];
-  readonly apply: (event: FlowEvent) => string | null;
+  readonly apply: ApplyEvent;
   readonly onDone: () => void;
 }
 
@@ -18,10 +19,10 @@ export const AddArgument = ({ claim, row, apply, onDone }: Props) => {
   const [text, setText] = useState("");
   const [respondsTo, setRespondsTo] = useState<string | null>(last?.id ?? null);
 
-  const submit = () => {
+  const submit = async () => {
     const trimmed = text.trim();
     if (trimmed === "") return;
-    const error = apply({
+    const error = await apply({
       type: "ArgumentAdded",
       argument: { id: newId(), claimId: claim.id, text: trimmed, stance, respondsTo, source: "manual", sourceRefs: [] },
     });
@@ -33,7 +34,7 @@ export const AddArgument = ({ claim, row, apply, onDone }: Props) => {
       className="add-argument"
       onSubmit={(e) => {
         e.preventDefault();
-        submit();
+        void submit();
       }}
       onKeyDown={(e) => {
         if (e.key === "Escape") onDone();

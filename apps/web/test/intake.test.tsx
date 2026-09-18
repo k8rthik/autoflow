@@ -5,19 +5,27 @@ import { Intake } from "../src/components/Intake.tsx";
 import * as api from "../src/lib/api.ts";
 
 vi.mock("../src/lib/api.ts", () => ({
-  buildFlow: vi.fn(),
+  createSession: vi.fn(),
   fetchSample: vi.fn(),
   listSamples: vi.fn(),
   parseMemoFile: vi.fn(),
 }));
 
 const mocked = vi.mocked(api);
-const events = [{ type: "ClaimAdded" as const, claim: { id: "c1", text: "The market is large", order: 0 } }];
+const session = { id: "s1", title: "Larkspur", createdAt: "2026-09-18T10:00:00.000Z" };
+const events = [
+  {
+    seq: 1,
+    at: "2026-09-18T10:00:00.000Z",
+    actor: "import" as const,
+    event: { type: "ClaimAdded" as const, claim: { id: "c1", text: "The market is large", order: 0 } },
+  },
+];
 
 const setup = () => {
-  const onLoaded = vi.fn();
-  const { container } = render(<Intake onLoaded={onLoaded} />);
-  return { onLoaded, container, user: userEvent.setup() };
+  const onCreated = vi.fn();
+  const { container } = render(<Intake onCreated={onCreated} />);
+  return { onCreated, container, user: userEvent.setup() };
 };
 
 const memoField = () => screen.getByRole("textbox", { name: "Investment memo" });
@@ -38,34 +46,34 @@ const dropOn = (container: HTMLElement, file: File) => {
 beforeEach(() => {
   vi.clearAllMocks();
   mocked.listSamples.mockResolvedValue({ ok: true, value: { samples: [{ id: "larkspur", title: "Larkspur" }] } });
-  mocked.buildFlow.mockResolvedValue({ ok: true, value: { title: "Larkspur", events, model: "fake", latencyMs: 1 } });
+  mocked.createSession.mockResolvedValue({ ok: true, value: { session, events, model: "fake", latencyMs: 1 } });
 });
 
 describe("Intake", () => {
-  it("builds a flow from a pasted memo and hands the log up", async () => {
-    const { onLoaded, user } = setup();
+  it("opens a session from a pasted memo and hands it up", async () => {
+    const { onCreated, user } = setup();
     await user.type(memoField(), "# Larkspur\n\nThe market is large.");
     await user.click(screen.getByRole("button", { name: "Build the flow" }));
 
-    await waitFor(() => expect(onLoaded).toHaveBeenCalledWith({ title: "Larkspur", events }));
-    expect(mocked.buildFlow).toHaveBeenCalledWith("# Larkspur\n\nThe market is large.", []);
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ session, events }));
+    expect(mocked.createSession).toHaveBeenCalledWith("# Larkspur\n\nThe market is large.", []);
   });
 
   it("refuses to build from nothing, without calling the server", async () => {
     const { user } = setup();
     await user.click(screen.getByRole("button", { name: "Build the flow" }));
     expect(screen.getByRole("status")).toHaveTextContent("Paste a memo or choose a file first.");
-    expect(mocked.buildFlow).not.toHaveBeenCalled();
+    expect(mocked.createSession).not.toHaveBeenCalled();
   });
 
   it("shows the server's error rather than a blank screen", async () => {
-    mocked.buildFlow.mockResolvedValue({ ok: false, error: { code: "NETWORK", message: "Could not reach the server. Is it running?" } });
-    const { onLoaded, user } = setup();
+    mocked.createSession.mockResolvedValue({ ok: false, error: { code: "NETWORK", message: "Could not reach the server. Is it running?" } });
+    const { onCreated, user } = setup();
     await user.type(memoField(), "a memo");
     await user.click(screen.getByRole("button", { name: "Build the flow" }));
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Could not reach the server"));
-    expect(onLoaded).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
   });
 
   it("offers the samples the server lists and loads one into the field", async () => {
@@ -113,7 +121,7 @@ describe("Intake", () => {
     await waitFor(() => expect(memoField()).toHaveValue("text"));
     await user.click(screen.getByRole("button", { name: "Build the flow" }));
 
-    expect(mocked.buildFlow).toHaveBeenCalledWith("text", figures);
+    expect(mocked.createSession).toHaveBeenCalledWith("text", figures);
   });
 
   it("reports a file it cannot convert", async () => {
@@ -170,6 +178,6 @@ describe("Intake", () => {
 
     await user.type(memoField(), "a fresh memo");
     await user.click(screen.getByRole("button", { name: "Build the flow" }));
-    expect(mocked.buildFlow).toHaveBeenCalledWith("a fresh memo", []);
+    expect(mocked.createSession).toHaveBeenCalledWith("a fresh memo", []);
   });
 });

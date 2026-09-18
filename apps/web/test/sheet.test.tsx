@@ -1,10 +1,9 @@
 import { statusOfAll } from "@autoflow/core";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Sheet } from "../src/components/Sheet.tsx";
-import type { FlowActions } from "../src/lib/useFlowDoc.ts";
-import { argument, argumentAdded, build, claim, claimAdded } from "./fixtures.ts";
+import { acceptingApply, argument, argumentAdded, build, claim, claimAdded, refusingApply, sessionDoc } from "./fixtures.ts";
 
 const events = [
   claimAdded(claim("c1", "The market is large", 0, "Market")),
@@ -13,13 +12,10 @@ const events = [
   argumentAdded(argument("a1", "c3", "No prior exits", "attack", null, "memo")),
 ];
 
-const actions = (): FlowActions => ({ load: vi.fn(), apply: vi.fn().mockReturnValue(null), undo: vi.fn(), reset: vi.fn() });
-
 const setup = (evts = events) => {
-  const state = build(evts);
-  const acts = actions();
-  render(<Sheet doc={{ title: "Larkspur", events: evts }} state={state} actions={acts} />);
-  return { acts, user: userEvent.setup() };
+  const apply = acceptingApply();
+  render(<Sheet doc={sessionDoc(evts)} state={build(evts)} apply={apply} onLeave={vi.fn()} />);
+  return { apply, user: userEvent.setup() };
 };
 
 describe("Sheet", () => {
@@ -89,21 +85,21 @@ describe("Sheet", () => {
 });
 
 describe("Row corrections", () => {
-  it("sends a rename through to the document", async () => {
-    const { acts, user } = setup();
+  it("sends a rename through to the server", async () => {
+    const { apply, user } = setup();
     await user.click(screen.getByRole("button", { name: "The market is large" }));
     const field = screen.getByRole("textbox", { name: "Claim text" });
     await user.clear(field);
     await user.type(field, "The market is crowded{Enter}");
-    expect(acts.apply).toHaveBeenCalledWith({ type: "ClaimRenamed", claimId: "c1", text: "The market is crowded" });
+    expect(apply).toHaveBeenCalledWith({ type: "ClaimRenamed", claimId: "c1", text: "The market is crowded" });
   });
 
   it("adds an argument to the row it was opened on", async () => {
-    const { acts, user } = setup();
+    const { apply, user } = setup();
     await user.click(screen.getByRole("button", { name: "Add an argument to claim 1" }));
     await user.type(screen.getByRole("textbox", { name: "Argument text" }), "TAM is bottom-up");
     await user.click(screen.getByRole("button", { name: "Add" }));
-    expect(acts.apply).toHaveBeenCalledWith(
+    expect(apply).toHaveBeenCalledWith(
       expect.objectContaining({ argument: expect.objectContaining({ claimId: "c1", text: "TAM is bottom-up" }) }),
     );
   });
@@ -119,16 +115,14 @@ describe("Row corrections", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("surfaces a rejected event on the row instead of dropping it silently", async () => {
-    const state = build(events);
-    const acts: FlowActions = { load: vi.fn(), apply: vi.fn().mockReturnValue("Unknown claim: c1"), undo: vi.fn(), reset: vi.fn() };
-    render(<Sheet doc={{ title: "Larkspur", events }} state={state} actions={acts} />);
+  it("surfaces a server refusal on the row instead of dropping it silently", async () => {
+    render(<Sheet doc={sessionDoc(events)} state={build(events)} apply={refusingApply("Unknown claim: c1")} onLeave={vi.fn()} />);
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Add an argument to claim 1" }));
     await user.type(screen.getByRole("textbox", { name: "Argument text" }), "Rejected");
     await user.click(screen.getByRole("button", { name: "Add" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Unknown claim: c1");
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Unknown claim: c1"));
   });
 });

@@ -9,7 +9,7 @@ const attack = argument("a1", "c1", "No prior exits", "attack");
 const support = argument("a2", "c1", "They ran ops at Stripe", "support");
 
 const setup = (row = [attack], applyReturns: string | null = null) => {
-  const apply = vi.fn().mockReturnValue(applyReturns);
+  const apply = vi.fn().mockResolvedValue(applyReturns);
   const onDone = vi.fn();
   render(<AddArgument claim={c} row={row} apply={apply} onDone={onDone} />);
   return { apply, onDone, user: userEvent.setup() };
@@ -85,7 +85,7 @@ describe("AddArgument", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
-  it("stays open when the event is rejected, so the typing is not lost", async () => {
+  it("stays open when the server refuses the event, so the typing is not lost", async () => {
     const { onDone, user } = setup([attack], "Unknown argument: a1");
     await user.type(screen.getByRole("textbox", { name: "Argument text" }), "Rejected");
     await user.click(screen.getByRole("button", { name: "Add" }));
