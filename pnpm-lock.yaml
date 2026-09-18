@@ -130,6 +130,12 @@ importers:
         specifier: ^9.7.1
         version: 9.7.1
 
+  packages/storage:
+    dependencies:
+      '@autoflow/core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@adobe/css-tools@4.5.0':
@@ -1444,7 +1450,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.0(@types/node@25.9.6)(@vitest/coverage-v8@5.0.0)(jsdom@30.1.0)(vite@8.3.0(@types/node@25.9.6))
+      vitest: 5.0.0(@types/node@22.20.2)(@vitest/coverage-v8@5.0.0)(jsdom@30.1.0)(vite@8.3.0(@types/node@22.20.2))
 
   '@vitest/istanbul-lib-coverage@1.0.1': {}
 
@@ -1469,6 +1475,7 @@ snapshots:
       magic-string: 1.3.1
     optionalDependencies:
       vite: 8.3.0(@types/node@25.9.6)
+    optional: true
 
   '@vitest/spy@5.0.0': {}
 
@@ -1973,6 +1980,7 @@ snapshots:
       jsdom: 30.1.0
     transitivePeerDependencies:
       - msw
+    optional: true
 
   w3c-xmlserializer@5.0.0:
     dependencies:

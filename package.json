@@ -6,7 +6,7 @@
   "description": "Turns a live investment discussion into a debate-style flow.",
   "packageManager": "pnpm@10.14.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "dev": "pnpm -r --parallel --filter @autoflow/server --filter @autoflow/web dev",
