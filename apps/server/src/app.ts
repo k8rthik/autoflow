@@ -1,14 +1,18 @@
 import { memoToEvents, randomIds, type ClaimExtractor, type ExtractionError, type IdFactory } from "@autoflow/classifier";
-import type { FlowEvent } from "@autoflow/core";
+import type { RecordedEvent } from "@autoflow/core";
 import { ingestFile, MAX_UPLOAD_BYTES, type IngestError, type MemoDocument } from "@autoflow/ingest";
+import type { Session } from "@autoflow/storage";
 import { Hono } from "hono";
 import { z } from "zod";
+import { SubmitEventsSchema, toFlowEvent } from "./event-schema.ts";
+import type { HubError, SessionHub } from "./hub.ts";
 import { titleOf, type Sample } from "./samples.ts";
 
 export interface AppDeps {
   readonly extractor: ClaimExtractor;
   readonly model: string;
   readonly samples: () => Promise<readonly Sample[]>;
+  readonly hub: SessionHub;
   readonly makeId?: IdFactory;
 }
 
@@ -26,9 +30,9 @@ const MemoRequest = z.object({
   figures: z.array(FigureSchema).max(MAX_FIGURES).default([]),
 });
 
-export interface MemoResponse {
-  readonly title: string;
-  readonly events: readonly FlowEvent[];
+export interface SessionResponse {
+  readonly session: Session;
+  readonly events: readonly RecordedEvent[];
   readonly model: string;
   readonly latencyMs: number;
 }
@@ -42,6 +46,12 @@ const statusFor = (error: ExtractionError): 400 | 502 => (error.code === "EMPTY_
 
 /** Every ingest failure is about the file the caller sent. */
 const ingestStatus = (_error: IngestError): 400 => 400;
+
+/**
+ * A missing session is 404; an event the domain refuses is 409, because the client's view of the
+ * flow is behind rather than its request being malformed; a lost race is 409 for the same reason.
+ */
+const hubStatus = (error: HubError): 404 | 409 => (error.code === "SESSION_NOT_FOUND" ? 404 : 409);
 
 const fileFromForm = (body: Record<string, unknown>): File | null => {
   const file = body["file"];
@@ -63,7 +73,8 @@ export const createApp = (deps: AppDeps) => {
     return sample ? c.json(ok(sample)) : c.json(fail({ code: "NOT_FOUND", message: "No sample with that id" }), 404);
   });
 
-  app.post("/api/memo", async (c) => {
+  /** Memo in, persisted session out. The seeded log is the session's first events. */
+  app.post("/api/sessions", async (c) => {
     const body = MemoRequest.safeParse(await c.req.json().catch(() => null));
     if (!body.success) {
       return c.json(fail({ code: "INVALID_REQUEST", message: `Body must be { memo: string } with at most ${MAX_MEMO_CHARS} characters` }), 400);
@@ -71,13 +82,36 @@ export const createApp = (deps: AppDeps) => {
     const result = await deps.extractor.extractClaims({ markdown: body.data.memo, figures: body.data.figures });
     if (!result.ok) return c.json(fail(result.error), statusFor(result.error));
 
-    const response: MemoResponse = {
+    const created = await deps.hub.create({
       title: titleOf(body.data.memo, "Untitled memo"),
       events: memoToEvents(result.claims, deps.makeId ?? randomIds()),
-      model: result.meta.model,
-      latencyMs: result.meta.latencyMs,
-    };
-    return c.json(ok(response));
+    });
+    if (!created.ok) return c.json(fail(created.error), hubStatus(created.error));
+
+    const response: SessionResponse = { ...created.value, model: result.meta.model, latencyMs: result.meta.latencyMs };
+    return c.json(ok(response), 201);
+  });
+
+  app.get("/api/sessions", async (c) => c.json(ok({ sessions: await deps.hub.list() })));
+
+  app.get("/api/sessions/:id", async (c) => {
+    const snapshot = await deps.hub.snapshot(c.req.param("id"));
+    return snapshot.ok ? c.json(ok(snapshot.value)) : c.json(fail(snapshot.error), hubStatus(snapshot.error));
+  });
+
+  /** Corrections from the room. Validated against the current flow before anything is appended. */
+  app.post("/api/sessions/:id/events", async (c) => {
+    const body = SubmitEventsSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) {
+      return c.json(fail({ code: "INVALID_REQUEST", message: "Body must be { events: FlowEvent[] }" }), 400);
+    }
+
+    const submitted = await deps.hub.submit({
+      sessionId: c.req.param("id"),
+      events: body.data.events.map(toFlowEvent),
+      actor: "participant",
+    });
+    return submitted.ok ? c.json(ok({ events: submitted.value })) : c.json(fail(submitted.error), hubStatus(submitted.error));
   });
 
   /** Multipart upload of a .docx or text file → MemoDocument the client can review before building. */

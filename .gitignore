@@ -10,3 +10,4 @@ coverage/
 out/
 packages/classifier/eval/results/
 sample_memos/
+data/

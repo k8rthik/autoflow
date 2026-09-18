@@ -14,8 +14,13 @@
     "@autoflow/classifier": "workspace:*",
     "@autoflow/core": "workspace:*",
     "@autoflow/ingest": "workspace:*",
+    "@autoflow/storage": "workspace:*",
     "@hono/node-server": "^2.1.1",
     "hono": "^4.13.7",
+    "ws": "^8.21.3",
     "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
   }
 }

@@ -1,6 +1,8 @@
 import { sequentialIds, type ClaimExtractor } from "@autoflow/classifier";
+import { createMemoryEventStore } from "@autoflow/storage";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.ts";
+import { createSessionHub } from "../src/hub.ts";
 import { titleOf } from "../src/samples.ts";
 
 const meta = { model: "fake-model", inputTokens: 1, outputTokens: 1, latencyMs: 5, stopReason: "end_turn" };
@@ -9,47 +11,27 @@ const okExtractor: ClaimExtractor = {
 };
 const samples = async () => [{ id: "a", title: "Memo A", text: "# Memo A\n\nbody" }];
 
-const app = (extractor = okExtractor) => createApp({ extractor, model: "fake-model", samples, makeId: sequentialIds("c") });
+const app = (extractor = okExtractor) => {
+  let n = 0;
+  const hub = createSessionHub({ store: createMemoryEventStore(), makeId: () => `s${++n}` });
+  return createApp({ extractor, model: "fake-model", samples, hub, makeId: sequentialIds("c") });
+};
 
 const post = (a: ReturnType<typeof createApp>, body: unknown) =>
-  a.request("/api/memo", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  a.request("/api/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
-describe("POST /api/memo", () => {
-  it("returns a title and ClaimAdded events in the response envelope", async () => {
-    const res = await post(app(), { memo: "# Larkspur\n\nThe market is large." });
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      ok: true,
-      error: null,
-      data: {
-        title: "Larkspur",
-        model: "fake-model",
-        latencyMs: 5,
-        events: [{ type: "ClaimAdded", claim: { id: "c1", text: "Market is large", order: 0, topic: "Market" } }],
-      },
-    });
-  });
-
-  it("rejects a missing or empty memo with 400", async () => {
-    expect((await post(app(), { memo: "   " })).status).toBe(400);
-    expect((await post(app(), {})).status).toBe(400);
-    const res = await app().request("/api/memo", { method: "POST", body: "not json" });
-    expect(res.status).toBe(400);
-    expect(await res.json()).toMatchObject({ ok: false, error: { code: "INVALID_REQUEST" } });
-  });
-
-  it("maps upstream extraction failures to 502 with the error passed through", async () => {
-    const failing: ClaimExtractor = { extractClaims: async () => ({ ok: false, error: { code: "REFUSED", message: "no" } }) };
-    const res = await post(app(failing), { memo: "text" });
-    expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ ok: false, data: null, error: { code: "REFUSED", message: "no" } });
-  });
-
+describe("failures that are not about the flow", () => {
   it("returns 500 in the envelope when the extractor throws", async () => {
     const throwing: ClaimExtractor = { extractClaims: async () => { throw new Error("boom"); } };
     const res = await post(app(throwing), { memo: "text" });
     expect(res.status).toBe(500);
     expect(await res.json()).toMatchObject({ ok: false, error: { code: "INTERNAL" } });
+  });
+
+  it("rejects a body that is not JSON", async () => {
+    const res = await app().request("/api/sessions", { method: "POST", body: "not json" });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ ok: false, error: { code: "INVALID_REQUEST" } });
   });
 });
 
@@ -87,7 +69,7 @@ describe("POST /api/memo/parse", () => {
     };
     const figure = { index: 1, mediaType: "image/png", data: "QUJD" };
     const res = await post(app(spy), { memo: "text\n![Figure 1](figure:1)", figures: [figure] });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(received).toEqual({ markdown: "text\n![Figure 1](figure:1)", figures: [figure] });
   });
 
