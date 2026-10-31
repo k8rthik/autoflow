@@ -146,6 +146,22 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/transcription:
+    dependencies:
+      '@autoflow/core':
+        specifier: workspace:*
+        version: link:../core
+      ws:
+        specifier: ^8.21.3
+        version: 8.21.3
+      zod:
+        specifier: ^4.6.1
+        version: 4.6.1
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+
 packages:
 
   '@adobe/css-tools@4.5.0':
