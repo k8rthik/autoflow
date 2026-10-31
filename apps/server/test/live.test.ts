@@ -1,12 +1,13 @@
 import { sequentialIds, type ClaimExtractor } from "@autoflow/classifier";
 import type { FlowEvent, RecordedEvent } from "@autoflow/core";
 import { createMemoryEventStore } from "@autoflow/storage";
+import type { Transcriber } from "@autoflow/transcription";
 import { serve, type ServerType } from "@hono/node-server";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocket } from "ws";
 import { createApp } from "../src/app.ts";
 import { createSessionHub, type SessionHub } from "../src/hub.ts";
-import { attachLiveUpdates, sessionIdFromPath } from "../src/live.ts";
+import { attachLiveUpdates, routeFromPath } from "../src/live.ts";
 
 const meta = { model: "fake", inputTokens: 1, outputTokens: 1, latencyMs: 1, stopReason: "end_turn" };
 const extractor: ClaimExtractor = {
@@ -22,12 +23,12 @@ interface Running {
 const running: Running[] = [];
 const sockets: WebSocket[] = [];
 
-const start = async (): Promise<Running> => {
+const start = async (transcriber: Transcriber | null = null): Promise<Running> => {
   let n = 0;
   const hub = createSessionHub({ store: createMemoryEventStore(), makeId: () => `s${++n}` });
   const app = createApp({ extractor, model: "fake", samples: async () => [], hub, makeId: sequentialIds("c") });
   const server = serve({ fetch: app.fetch, port: 0 });
-  attachLiveUpdates(server, hub);
+  attachLiveUpdates(server, { hub, transcriber });
 
   await new Promise((resolve) => server.once("listening", resolve));
   const address = server.address();
@@ -72,18 +73,24 @@ const seedSession = async (hub: SessionHub) => {
 
 const rename: FlowEvent = { type: "ClaimRenamed", claimId: "c1", text: "The market is crowded" };
 
-describe("sessionIdFromPath", () => {
+describe("routeFromPath", () => {
   it("reads the session id out of the live-updates path", () => {
-    expect(sessionIdFromPath("/ws/sessions/abc-123")).toBe("abc-123");
-    expect(sessionIdFromPath("/ws/sessions/abc-123?since=4")).toBe("abc-123");
+    expect(routeFromPath("/ws/sessions/abc-123")).toEqual({ kind: "watch", sessionId: "abc-123" });
+    expect(routeFromPath("/ws/sessions/abc-123?since=4")).toEqual({ kind: "watch", sessionId: "abc-123" });
+  });
+
+  it("reads the session id out of the audio path", () => {
+    expect(routeFromPath("/ws/sessions/abc-123/audio")).toEqual({ kind: "audio", sessionId: "abc-123" });
   });
 
   it("refuses anything else, including a path trying to escape the route", () => {
-    expect(sessionIdFromPath("/ws/sessions/")).toBeNull();
-    expect(sessionIdFromPath("/ws/sessions/a/b")).toBeNull();
-    expect(sessionIdFromPath("/ws/sessions/../../etc/passwd")).toBeNull();
-    expect(sessionIdFromPath("/socket")).toBeNull();
-    expect(sessionIdFromPath(undefined)).toBeNull();
+    expect(routeFromPath("/ws/sessions/")).toBeNull();
+    expect(routeFromPath("/ws/sessions/a/b")).toBeNull();
+    expect(routeFromPath("/ws/sessions/a/audio/b")).toBeNull();
+    expect(routeFromPath("/ws/sessions//audio")).toBeNull();
+    expect(routeFromPath("/ws/sessions/../../etc/passwd")).toBeNull();
+    expect(routeFromPath("/socket")).toBeNull();
+    expect(routeFromPath(undefined)).toBeNull();
   });
 });
 

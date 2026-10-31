@@ -1,4 +1,14 @@
-import { emptyFlow, reduce, replay, type Actor, type FlowError, type FlowEvent, type FlowState, type RecordedEvent } from "@autoflow/core";
+import {
+  emptyFlow,
+  reduce,
+  replay,
+  type Actor,
+  type FlowError,
+  type FlowEvent,
+  type FlowState,
+  type RecordedEvent,
+  type TranscriptSegment,
+} from "@autoflow/core";
 import type { EventStore, Session, StorageError } from "@autoflow/storage";
 
 export interface Snapshot {
@@ -9,8 +19,13 @@ export interface Snapshot {
 export type HubError = FlowError | StorageError;
 export type HubResult<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: HubError };
 
-/** What a subscriber is told. Only committed events travel; proposals will be a separate message type. */
-export type HubMessage = { readonly type: "events"; readonly events: readonly RecordedEvent[] };
+/**
+ * What a subscriber is told: committed events, and the room's transcript as it is recognized.
+ * Proposals will be a third message type.
+ */
+export type HubMessage =
+  | { readonly type: "events"; readonly events: readonly RecordedEvent[] }
+  | { readonly type: "transcript"; readonly segment: TranscriptSegment };
 
 export type Subscriber = (message: HubMessage) => void;
 
@@ -31,6 +46,8 @@ export interface SessionHub {
   snapshot(sessionId: string): Promise<HubResult<Snapshot>>;
   submit(input: SubmitInput): Promise<HubResult<readonly RecordedEvent[]>>;
   subscribe(sessionId: string, subscriber: Subscriber): () => void;
+  /** Tells the room what was just heard. Segments are not part of the log, so nothing is validated. */
+  publishTranscript(sessionId: string, segment: TranscriptSegment): void;
 }
 
 export interface HubDeps {
@@ -117,5 +134,7 @@ export const createSessionHub = ({ store, makeId }: HubDeps): SessionHub => {
         if (forSession.size === 0) subscribers.delete(sessionId);
       };
     },
+
+    publishTranscript: (sessionId, segment) => announce(sessionId, { type: "transcript", segment }),
   };
 };

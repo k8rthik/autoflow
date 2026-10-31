@@ -47,6 +47,9 @@ importers:
       '@autoflow/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      '@autoflow/transcription':
+        specifier: workspace:*
+        version: link:../../packages/transcription
       '@hono/node-server':
         specifier: ^2.1.1
         version: 2.1.1(hono@4.13.7)

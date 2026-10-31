@@ -15,6 +15,7 @@
     "@autoflow/core": "workspace:*",
     "@autoflow/ingest": "workspace:*",
     "@autoflow/storage": "workspace:*",
+    "@autoflow/transcription": "workspace:*",
     "@hono/node-server": "^2.1.1",
     "hono": "^4.13.7",
     "ws": "^8.21.3",
