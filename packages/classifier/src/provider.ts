@@ -71,8 +71,9 @@ export const resolveProvider = (
 export const createConfiguredExtractor = (
   env: Readonly<Record<string, string | undefined>>,
   modelOverride?: string,
+  hasAnthropicProfile: () => boolean = defaultProfileExists,
 ): ConfiguredExtractorResult => {
-  const provider = resolveProvider(env);
+  const provider = resolveProvider(env, hasAnthropicProfile);
   if (!provider.ok) return provider;
   const model = modelOverride ?? provider.value.defaultModel;
   const client = new Anthropic(provider.value.clientOptions);
