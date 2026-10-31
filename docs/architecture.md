@@ -69,6 +69,7 @@ Read the requirements again with that lens and most of the hard ones fall out fo
 - **FlowState.** Claims, arguments, and per-claim row sequences. Immutable. Only `reduce()` produces new ones.
 - **FlowEvent.** Discriminated union: `ClaimAdded`, `ClaimRenamed`, `ClaimRemoved`, `ClaimsMerged`, `ArgumentAdded`, `ArgumentEdited`, `ArgumentMoved`, `ArgumentRestanced`, `ArrowRepointed`, `ArgumentsMerged`, `ArgumentRemoved`. Every requirement-4.7 correction maps to exactly one event.
 - **Status.** Derived by `statusOf(state, claimId)`.
+- **TranscriptSegment.** `{ id, text, startMs, endMs, final, confidence }`. One stretch of recognized speech. Interim segments are revised under the same id until the final one arrives, and an argument's `sourceRefs` cite final segment ids. It lives in `core` so storage and the web transcript view can use it without importing an adapter.
 
 ### Status rule, made precise
 
@@ -104,7 +105,7 @@ autoflow/
     classifier/         ClaimExtractor port + Claude adapter              (done: memo → claims, text + figures)
     ingest/             .docx / .md → MemoDocument (markdown + figures)   (done)
     storage/            EventStore port + SQLite and in-memory adapters   (done)
-    transcription/      Transcriber port + Deepgram adapter               (next)
+    transcription/      Transcriber port + Deepgram adapter               (done: streaming, not yet persisted)
   apps/
     cli/                `autoflow memo`: memo file in, seeded flow out    (done)
     server/             session hub, HTTP API, websocket fan-out          (done)
@@ -117,7 +118,7 @@ autoflow/
 2. **Memo and prelims import** through the classifier port, producing `ClaimAdded` and `ArgumentAdded` events. Lets us test claim granularity against real memos (open question 1) before touching audio. *Memo half done via `apps/cli`; prelims next.*
 3. **Web room view** reading a static event log. Validates the projection visually and the animation model. *Done.*
 4. **Server** with websocket fan-out and SQLite log. *Done: sessions are persisted through the `EventStore` port, corrections are validated server-side before they enter the log, and committed events are pushed to every client in the room.*
-5. **Live transcription** feeding the transcript view only.
+5. **Live transcription** feeding the transcript view only. *Server half done: a microphone streams to `/ws/sessions/:id/audio`, Deepgram transcribes it through the `Transcriber` port, and segments are pushed to the room as `transcript` messages. Next: persist final segments in `transcript_segments`, then the web transcript view and microphone capture.*
 6. **Live classification** producing proposals, then commits.
 7. Replay, summary, export.
 

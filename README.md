@@ -14,10 +14,10 @@ packages/core        pure domain: types, events, reducer, status derivation, rep
 packages/classifier  ClaimExtractor port + Claude adapter; memo → ClaimAdded events
 packages/ingest      .docx / .md → markdown with tables, plus figures sent to the model as images
 packages/storage     EventStore port + SQLite and in-memory adapters for the append-only log
+packages/transcription  Transcriber port + Deepgram streaming adapter; room audio → transcript segments
 apps/cli             `autoflow memo <file>`: memo in, seeded flow out
-apps/server          session hub, HTTP API and websocket fan-out over the event log
+apps/server          session hub, HTTP API, websocket fan-out of the event log and transcript, audio in
 apps/web             room view: the flow as a sheet, with inline corrections
-packages/transcription  Transcriber port + Deepgram adapter               — next
 ```
 
 ## Run the app
@@ -41,6 +41,21 @@ with `AUTOFLOW_DB`), so a reload — or a server restart — comes back to the s
 
 Corrections are append-only, so there is no undo button: fixing a correction means making another
 one, and every step stays in the log.
+
+## Live transcription
+
+Set `DEEPGRAM_API_KEY` in `.env` to turn it on. Without it the server still starts, prints that
+transcription is off, and refuses audio connections with close code 4503.
+
+A microphone client opens a websocket to `/ws/sessions/<id>/audio` and sends the recording as binary
+frames, in a container Deepgram can read without being told the format: WebM/Opus from the browser's
+`MediaRecorder`, Ogg, or WAV. Text frames close the socket with 1003. The server relays the audio to
+Deepgram (`nova-3`, interim results on) and sends every segment it hears to everyone on
+`/ws/sessions/<id>` as `{ "type": "transcript", "segment": { ... } }`. A segment's id stays the same
+while its text is interim, and the segment with `final: true` replaces the earlier ones. If Deepgram
+fails or drops the stream, the server closes the microphone's socket with 1011 and the reason.
+
+Segments are not stored yet, and the web app has no transcript view or microphone button yet.
 
 ## Try it: memo → flow
 
