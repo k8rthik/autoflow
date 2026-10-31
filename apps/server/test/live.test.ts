@@ -145,6 +145,15 @@ describe("live updates", () => {
     expect(await nextClose(socket)).toBe(4004);
   });
 
+  it("turns away a missing session whose id is too long to quote in a close reason, and keeps serving", async () => {
+    const { port, hub } = await start();
+    const socket = connect(port, `/ws/sessions/${"a".repeat(200)}`);
+    expect(await nextClose(socket)).toBe(4004);
+
+    const id = await seedSession(hub);
+    expect(await nextMessage(connect(port, `/ws/sessions/${id}`))).toEqual({ type: "welcome", afterSeq: 1 });
+  });
+
   it("turns away a connection to a path that is not a session", async () => {
     const { port } = await start();
     const socket = connect(port, "/socket");

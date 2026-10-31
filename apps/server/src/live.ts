@@ -52,7 +52,7 @@ const toBytes = (data: RawData): Uint8Array => {
 
 const watch = async (socket: WebSocket, hub: SessionHub, sessionId: string): Promise<void> => {
   const snapshot = await hub.snapshot(sessionId);
-  if (!snapshot.ok) return socket.close(CLOSE_NO_SESSION, snapshot.error.message);
+  if (!snapshot.ok) return closeWith(socket, CLOSE_NO_SESSION, snapshot.error.message);
 
   // The client already fetched the log over HTTP; this says where the live stream starts so it
   // can tell whether it missed anything between that fetch and this connection.
